@@ -1,0 +1,28 @@
+... start date :  20221004-143146
+>>> src    : error value
+... nSample, aDistThreshold :  8 [0.371, 0.371, 0.852, 0.323]
+... sRefXpolate, aVectors, aShapes       :  wrist [0, 1, 2, 3] [63, 63, 39, 63]
+... bInterpolateHands, bExtrapolateHands :  False False
+... nAttemptFeat, nAttemptThreshold      :  1 0.5
+usage : 
+      --in     default='./select/', input files directory
+      --mod    default='./model/', output / input dataframe / model directory
+      --src    default='lsf-xxxx', video source (dicoelix, pisourd, sematos, other, lsf-xxx, test)
+      --set    default='directory', video set : directory, array, test
+      --nb     default='0', how many video, 0 = all
+      --play   default='sequence', video playlist : alea, sequence
+      --dis    default='hands', display video on screen : hands, pose, face, yes, no
+      --df     default='lsf-xxxx_3_hp_8.npy', dataframe name
+      --cfg    default='medium', configuration classifier x normalizer: small, medium, large, all
+      --action default='infe', what action to do : vide[o], extr[action], spli[t], feat[ure], redu[ction], sele[ction], trai[n&test], accu[racy], infe[rence], demo[nstration]
+      --aug    default='no', data augmentation : scale, rotation, shift, noise, yes, no
+      --naug   default='1', data augmentation : how many duplicate values
+      --vec    default='hands,pose', vector features composed of: hands[,pose[,face]]
+      --xpol   default='x', [i]nterpolate and/or [e]xtrapolate missing trames, other letter no xpolation
+      --dim    default='3', vector features dimension 2 (x,y) or 3 (x,y,z)
+      --sample default='8', number of frames by feature vectors
+      --attempt,default='1', number of attempt when no landmark
+... at least one argument needed
+
+... python mLsfML3d.py --in ./select/ --mod ./model/ --set directory --nb 9999999999 --play sequence --aug no --naug 1 --dis hands --vec hands,pose --dim 3 --attempt 1 --sample 8 --xpol x --cfg medium --src lsf-xxxx --df lsf-xxxx_3_hp_8.npy --action infe > lsf-xxxx_3_hp_x_Flip_8.txt
+
