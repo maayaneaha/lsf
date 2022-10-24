@@ -1,7 +1,7 @@
 # LSF
 > This project was made by the AIE's Paris Team of Capgemini.
 
-This project is a sign language recognition by video.
+This project is a sign language recognition by video. We are still working on the project.
 
 ## Requirements :
 
