@@ -9,6 +9,7 @@ from __future__ import print_function
 import argparse
 import copy
 import csv
+from multiprocessing import Event
 import cv2
 import operator
 import joblib
@@ -28,7 +29,10 @@ import threading
 import time
 import unidecode
 
+from time import *
+
 from PIL import ImageEnhance, Image
+from threading import Thread
 
 import mVideoConvert as vc
 
@@ -92,6 +96,19 @@ class cLsfNormalizerIdentity :
             return np.round((aSample - nMin) / (nMax - nMin) * self.nClass, 0)
         else :
             return aSamples
+
+'''class Threads :
+    def __init__(self, times, event):      # times = donnée supplémentaire
+            threading.Thread.__init__(self)
+            # (appel au constructeur de la classe mère)
+            self.times = times           # donnée supplémentaire ajoutée à la classe
+            self.state = False
+            self.event = event
+
+    def run(self):
+        for i in range(0, self.jusqua):
+            print("thread ", i)
+            self.event.set()'''
 
 # List of scalers to normalize data --------------------------------------------
 aNormalizers_all = {
@@ -253,7 +270,7 @@ sWordDemoNew = ""
 bNextVideo = True
 
 aDisplResult = []
-phrase = ["phrase :"]
+phrase = [" "]
 sSentence = ""
 nFont = cv2.FONT_HERSHEY_SIMPLEX
 nFontScale = 1
@@ -618,19 +635,33 @@ def mGetFeatures(image, sWord) :
     cv2.namedWindow(sWord)
     cv2.moveWindow(sWord, nWidthScreen//2, 0)    
     nIdxLine = 1
+    #for sWordL, number in aDisplResult:
+    """ if (sWordL != phrase[-1]) :
+        if not(bHandRightDisAppear and bHandLeftDisAppear) :
+            cpt += 1
+            phrase.append(sWordL)
+            sSentence = ""
+        if (bHandRightDisAppear or bHandLeftDisAppear) or (bHandRightDisAppear and bHandLeftDisAppear) or (cpt > 4):
+            phrase.clear()
+            phrase = [" "]
+            cpt = 0"""
     for sWordL, number in aDisplResult:
         if (sWordL != phrase[-1]) :
             if not(bHandRightDisAppear and bHandLeftDisAppear) :
                 cpt += 1
                 phrase.append(sWordL)
                 sSentence = ""
-            if (bHandRightDisAppear or bHandLeftDisAppear) or (bHandRightDisAppear and bHandLeftDisAppear) or (cpt > 4):
+            """if (bHandRightDisAppear or bHandLeftDisAppear) or (bHandRightDisAppear and bHandLeftDisAppear) or (cpt > 4):
                 phrase.clear()
-                phrase = ["phrase :"]
-                cpt = 0
+                phrase = [" "]
+                cpt = 0"""      
         sSentence = ""
         for e in phrase :
             sSentence += e + ' '
+        if (len(sSentence) != 0) :
+            nb_carac = len(sSentence)
+        if (nb_carac > 42 ) :
+            phrase.pop(1)
         cv2.putText(image, f"{(unidecode.unidecode(sSentence))}", (0, 45*nIdxLine), nFont, nFontScale, (0, 0, 255), nThickness, nLineType)
         '''nIdxLine += 1
         #if nIdxLine > 2 : break
@@ -1663,8 +1694,12 @@ def mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic):
             bCR, aHandLeft, aHandRight, aPoses, aFaces, bHandLeftAppear, bHandLeftDisAppear, bHandRightAppear, bHandRightDisAppear = mGetFeatures(image, "Test your knowledge (hide your hands between the signs)...")
             if not bCR : 
                 break
+            #en moyenne 15 trames à ce niveau là
             # Normalize feature : origin middle of shoulders, etc.  ------------
             aHandLeft, aHandRight, aPoses, aFaces = mNormalizeFeatures(aHandLeft, aHandRight, aPoses, aFaces)
+            #en moyenne 8 trames à ce niveau là
+
+            #analyser sur 5 et 11 trames en multi-threading 
 
             # Add default hand when no hand.landmark but pose.wrist ----
             if bExtrapolateHands :
@@ -1820,40 +1855,96 @@ def mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic):
 # ------------------------------------------------------------------------------
 def mLsfContinue() :
     #print(_getframe().f_code.co_name)
-    global aSequences
-
-    lock = threading.Lock() 
-    oThreadVideoTest = threading.Thread(target=mLstGetExample, args=(sDirIn, sSrc, sPlayList, lock))
-    oThreadVideo = threading.Thread(target=mLstGetExample, args=(sDirIn, sSrc, sPlayList, lock))
-    oThreadVideo.daemon = True
-    oThreadVideo.start()
+    global aSequences, DirModel, sDataFrame, mp_holistic, holistic
+    sWord = ""
+    
     
     aWin = (8, 4, 16)
     aWinSkip = (6, 4,12)
     nAttemptThreshold = len(aWin)
     nConfThreshold = 0.18
     
+    result = None
+
     while (True) :
-    
-        nAttempt = 0
+            
+        '''nWin = aWin[nAttempt]
+        nWinSkip = aWinSkip[nAttempt]
+        while len(aSequences) < nWin :
+            time.sleep(0.25)
+            aSeq = aSequences[:aWin]
         
+        if nConf < nConfThreshold :
+            nAttempt += 1
+            sWord = "?"
+            if nAttempt >= nAttemptThreshold : break
+        else :
+            break
+        
+        
+        print("... sWord : ", sWord)'''
+
+        #threadprincipal = Thread(target = )
+        #https://docs.python.org/3/library/threading.html
+        threadprincipal = Thread(target=mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic))
+
+        threadmin = Thread(target=mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic))
+        threadmax = Thread(target=mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic))
+        threadmin.start()
+        threadmax.start() 
+
+        eventmax = Event()
+        eventmin = Event()
+
+
+
+        bCR, aHandLeft, aHandRight, aPoses, aFaces, bHandLeftAppear, bHandLeftDisAppear, bHandRightAppear, bHandRightDisAppear = mGetFeatures(image, "Test your knowledge (hide your hands between the signs)...")
         while (True) :
-        
-            nWin = aWin[nAttempt]
-            nWinSkip = aWinSkip[nAttempt]
-            while len(aSequences) < nWin :
-                time.sleep(0.25)
-                aSeq = aSequences[:aWin]
-         
-            if nConf < nConfThreshold :
-                nAttempt += 1
-                sWord = "?"
-                if nAttempt >= nAttemptThreshold : break
-            else :
-                break
-        
-        
-        print("... sWord : ", sWord)
+            time = 0
+            if (time == 0.3) :
+                eventmin.is_set == True
+                resultmin = threadmin
+            if (time == 1.5) :
+                eventmax.is_set == True
+                resultmax = threadmax
+            if eventmin.is_set() :
+                resmin = resultmin[1]
+            if eventmax.is_set() :
+                resmax = resultmax[1]
+
+            if resmax > resmin :
+                result = resultmax[0]
+            if resmin > resmax :
+                result = resultmin[0]
+            
+            threadprincpal = result
+
+            image.flags.writeable = False
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+            time += 0.1
+            cv2.namedWindow(sWord)
+            cv2.moveWindow(sWord, nWidthScreen//2, 0)    
+            nIdxLine = 1
+            aDisplResult = mLsfMostFreq(nMostFreq, aWord, aPredict, bPrint = True)
+            for sWordL, number in aDisplResult:
+                if (sWordL != phrase[-1]) :
+                    if not(bHandRightDisAppear and bHandLeftDisAppear) :
+                        cpt += 1
+                        phrase.append(sWordL)
+                        sSentence = ""
+                    """if (bHandRightDisAppear or bHandLeftDisAppear) or (bHandRightDisAppear and bHandLeftDisAppear) or (cpt > 4):
+                        phrase.clear()
+                        phrase = [" "]
+                        cpt = 0"""
+                    if (len(sSentence) > nWidthScreen ) :
+                        phrase.pop(1)
+                sSentence = ""
+                for e in phrase :
+                    sSentence += e + ' '
+                cv2.putText(image, f"{(unidecode.unidecode(result))}", (0, 45*nIdxLine), nFont, nFontScale, (0, 0, 255), nThickness, nLineType)
+
+
 
 # ------------------------------------------------------------------------------
 # Play and example of video sign...
@@ -1940,7 +2031,7 @@ def mLstGetExample(sDirIn, sSrc, sPlayList, lock) :
 
                     for nIdxSlowRate in range(nSlowRate) :
                         cv2.imshow(sWinName, image)
-                        time.sleep(0.040)
+                        #time.sleep(0.040)
                     
                     #cv2.waitKey(nWaitTime)
                     if cv2.waitKey(nWaitTime) == ord('q'): exit()
@@ -2263,7 +2354,7 @@ if __name__ == '__main__' :
 
     sDataFrame = args['df']
     sAction = args['action'].lower()[0:4]
-    if sAction not in ('vide', 'extr', 'spli', 'feat', 'redu', 'sele', 'trai', 'accu', 'infe', 'demo', 'all*') : 
+    if sAction not in ('vide', 'extr', 'spli', 'feat', 'redu', 'sele', 'trai', 'accu', 'infe', 'demo', 'all*', 'test') : 
         bParamError = True
         print(">>> action : error value")
 
@@ -2331,7 +2422,7 @@ if __name__ == '__main__' :
         print("      --dis    default='hands', display video on screen : hands, pose, face, yes, no")
         print("      --df     default='lsf-xxxx_3_hp_8.npy', dataframe name")
         print("      --cfg    default='medium', configuration classifier x normalizer: small, medium, large, all")
-        print("      --action default='infe', what action to do : vide[o], extr[action], spli[t], feat[ure], redu[ction], sele[ction], trai[n&test], accu[racy], infe[rence], demo[nstration]")
+        print("      --action default='infe', what action to do : vide[o], extr[action], spli[t], feat[ure], redu[ction], sele[ction], trai[n&test], accu[racy], infe[rence], demo[nstration], test[continue]")
         print("      --aug    default='no', data augmentation : scale, rotation, shift, noise, yes, no")
         print("      --naug   default='1', data augmentation : how many duplicate values")
         print("      --vec    default='hands,pose', vector features composed of: hands[,pose[,face]]")
@@ -2410,6 +2501,11 @@ if __name__ == '__main__' :
         # Do prediction from real time video
         ans = mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic)
 
+    if (sAction == "test") :
+        #test : do prediction from real time and make a sentence at the end
+        print("valide")
+        ans = mLsfContinue()
+
     if (sAction == "demo") :
         # Do prediction from real time video with example given to user
 
@@ -2421,8 +2517,3 @@ if __name__ == '__main__' :
 
         # Main code used to verify your attempts
         ans = mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic)
-
-    if (sAction == "testC") :
-        #test : do prediction from real time and make a sentence at the end
-        print("valide")
-        ans = mLsfContinue()
