@@ -29,7 +29,9 @@ import threading
 import time
 import unidecode
 
+from time import sleep
 from time import *
+import time
 
 from PIL import ImageEnhance, Image
 from threading import Thread
@@ -663,9 +665,10 @@ def mGetFeatures(image, sWord) :
         if (nb_carac > 42 ) :
             phrase.pop(1)
         cv2.putText(image, f"{(unidecode.unidecode(sSentence))}", (0, 45*nIdxLine), nFont, nFontScale, (0, 0, 255), nThickness, nLineType)
-        '''nIdxLine += 1
+        nIdxLine += 1
         #if nIdxLine > 2 : break
-        if nIdxLine > 3 : break'''
+        if nIdxLine > 3 : break
+        
 
     cv2.imshow(sWord, image)
     #if cv2.waitKey(nWaitTime) == ord('q'): pass
@@ -1884,18 +1887,16 @@ def mLsfContinue() :
         
         print("... sWord : ", sWord)'''
 
-        #threadprincipal = Thread(target = )
-        #https://docs.python.org/3/library/threading.html
-        threadprincipal = Thread(target=mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic))
 
         threadmin = Thread(target=mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic))
         threadmax = Thread(target=mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic))
+        threadprincipal = Thread(target=mLsfInference(sDirModel, sDataFrame, mp_holistic, holistic))
         threadmin.start()
         threadmax.start() 
 
         eventmax = Event()
         eventmin = Event()
-
+        threadprincipal.join()
 
 
         bCR, aHandLeft, aHandRight, aPoses, aFaces, bHandLeftAppear, bHandLeftDisAppear, bHandRightAppear, bHandRightDisAppear = mGetFeatures(image, "Test your knowledge (hide your hands between the signs)...")
@@ -1911,39 +1912,36 @@ def mLsfContinue() :
                 resmin = resultmin[1]
             if eventmax.is_set() :
                 resmax = resultmax[1]
-
             if resmax > resmin :
                 result = resultmax[0]
             if resmin > resmax :
                 result = resultmin[0]
             
-            threadprincpal = result
+            threadprincpal = result + resultwidth
 
             image.flags.writeable = False
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             time += 0.1
             cv2.namedWindow(sWord)
+            (resultheight, resultwidth) = mLsfGetScreenSize()
             cv2.moveWindow(sWord, nWidthScreen//2, 0)    
             nIdxLine = 1
             aDisplResult = mLsfMostFreq(nMostFreq, aWord, aPredict, bPrint = True)
+            aDisplay
             for sWordL, number in aDisplResult:
                 if (sWordL != phrase[-1]) :
                     if not(bHandRightDisAppear and bHandLeftDisAppear) :
                         cpt += 1
                         phrase.append(sWordL)
                         sSentence = ""
-                    """if (bHandRightDisAppear or bHandLeftDisAppear) or (bHandRightDisAppear and bHandLeftDisAppear) or (cpt > 4):
-                        phrase.clear()
-                        phrase = [" "]
-                        cpt = 0"""
-                    if (len(sSentence) > nWidthScreen ) :
+                    if (len(sSentence) > resultwidth ) :
                         phrase.pop(1)
                 sSentence = ""
                 for e in phrase :
                     sSentence += e + ' '
                 cv2.putText(image, f"{(unidecode.unidecode(result))}", (0, 45*nIdxLine), nFont, nFontScale, (0, 0, 255), nThickness, nLineType)
-
+            time += 0.1
 
 
 # ------------------------------------------------------------------------------
@@ -1989,6 +1987,7 @@ def mLstGetExample(sDirIn, sSrc, sPlayList, lock) :
 
         while (True) :
 
+
             # Rule to select input file ----------------------------------------
             if (sPlayList == "alea") : 
                 #nIdxFile = int(nFileMax * rd.random())
@@ -2002,6 +2001,7 @@ def mLstGetExample(sDirIn, sSrc, sPlayList, lock) :
             sFileExt = sFile[-4:]
             if (sFileExt != ".mp4") : 
                 continue
+            
 
             sBaseFile = os.path.basename(sFile)
             sWordDemoNew = sBaseFile.split("#")[0]
@@ -2031,7 +2031,7 @@ def mLstGetExample(sDirIn, sSrc, sPlayList, lock) :
 
                     for nIdxSlowRate in range(nSlowRate) :
                         cv2.imshow(sWinName, image)
-                        #time.sleep(0.040)
+                        time.sleep(0.020)
                     
                     #cv2.waitKey(nWaitTime)
                     if cv2.waitKey(nWaitTime) == ord('q'): exit()
@@ -2503,7 +2503,10 @@ if __name__ == '__main__' :
 
     if (sAction == "test") :
         #test : do prediction from real time and make a sentence at the end
-        print("valide")
+        lock = threading.Lock() 
+        oThreadVideo = threading.Thread(target=mLstGetExample, args=(sDirIn, sSrc, sPlayList, lock))
+        oThreadVideo.daemon = True
+        oThreadVideo.start()
         ans = mLsfContinue()
 
     if (sAction == "demo") :
