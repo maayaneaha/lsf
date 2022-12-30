@@ -1,0 +1,25 @@
+... start date :  20221228-155954
+... nSample, aDistThreshold :  8 [0.371, 0.371, 0.852, 0.323]
+... sRefXpolate, aVectors, aShapes       :  wrist [0, 1, 2, 3] [63, 63, 39, 63]
+... bInterpolateHands, bExtrapolateHands :  False False
+... nAttemptFeat, nAttemptThreshold      :  1 0.5
+... python mLsfML3d.py --in ./select/ --mod ./model/ --set directory --nb 9999999999 --play sequence --aug no --naug 1 --dis hands --vec hands,pose --dim 3 --attempt 1 --sample 8 --xpol x --cfg medium --src lsf-0064 --df lsf-0064_3_hp_8.npy --action demo > lsf-xxxx_3_hp_x_Flip_8.txt
+... Package versions
+...... csv        :  1.0
+...... openCV     :  4.6.0
+...... joblib     :  1.1.0
+...... matplotlib :  3.5.1
+...... numpy      :  1.21.5
+...... pandas     :  1.4.2
+...... sklearn    :  1.0.2
+... len() 9999999999 / 1280 
+
+... sign :  ... 1 / 2
+
+... sign : adresse ... 2 / 2
+
+... sign : adresse ... 1 / 2
+
+... sign : affaire ... 2 / 2
+
+... sign : affaire ... 1 / 2
